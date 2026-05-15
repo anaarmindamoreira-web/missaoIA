@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missão IA: Decidir com Critério</title>
+    <!-- Tailwind CSS para Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React e Babel para a lógica -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+        
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Cores personalizadas para os níveis */
+        .level-1 { border-color: #ef4444; color: #b91c1c; }
+        .level-2 { border-color: #f59e0b; color: #b45309; }
+        .level-3 { border-color: #3b82f6; color: #1d4ed8; }
+        .level-4 { border-color: #10b981; color: #047857; }
+        .level-5 { border-color: #8b5cf6; color: #6d28d9; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // Componente de Ícone Lucide
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        const shuffleArray = (array) => {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+
+        const levelsInfo = [
+            { level: 5, label: "Mestre da Co-Criação", color: "text-purple-700", bg: "bg-purple-50", icon: "award", desc: "Agência humana plena. Uso estratégico e crítico para expandir o pensamento e a criatividade." },
+            { level: 4, label: "Analista Ético", color: "text-teal-700", bg: "bg-teal-50", icon: "shield-check", desc: "Uso consciente com forte validação de fontes e proteção ativa da privacidade digital." },
+            { level: 3, label: "Utilizador Funcional", color: "text-blue-700", bg: "bg-blue-50", icon: "zap", desc: "Uso operacional para apoio técnico, mas com excessiva confiança na estrutura da IA." },
+            { level: 2, label: "Consumidor Passivo", color: "text-amber-700", bg: "bg-amber-50", icon: "eye", desc: "Uso como atalho rápido, aceitando as respostas geradas sem verificação sistemática." },
+            { level: 1, label: "Dependente Digital", color: "text-red-700", bg: "bg-red-50", icon: "alert-triangle", desc: "Submissão intelectual. Delegação total da aprendizagem e do raciocínio na ferramenta." }
+        ];
+
+        const scenariosData = [
+            {
+                id: 1,
+                title: "História: O Estado Novo",
+                context: "Estás a investigar a resistência à ditadura. A IA gera um texto fluido, mas omite factos importantes sobre a oposição democrática.",
+                dilema: "Qual é o teu compromisso com a verdade histórica e a autoria?",
+                options: [
+                    { level: 1, text: "Aceitar o texto da IA sem ler mais nada. Como parece bem escrito, deve estar correto.", feedback: "Nível 1: Dependência Crítica. Delegaste a tua consciência histórica a um modelo estatístico.", points: 2 },
+                    { level: 2, text: "Usar o texto mas mudar o início e o fim para parecer que fui eu que fiz a pesquisa.", feedback: "Nível 2: Omissão Ética. Tentaste mascarar a falta de trabalho original em vez de investigares.", points: 4 },
+                    { level: 3, text: "Usar a IA para resumir os documentos que o professor entregou, mantendo esses factos.", feedback: "Nível 3: Utilizador Funcional. Usaste a IA como ferramenta de suporte técnico à leitura.", points: 6 },
+                    { level: 4, text: "Pedir à IA para identificar pontos de vista opostos e depois validar esses pontos em manuais.", feedback: "Nível 4: Analista Ético. Usaste a IA para diversificar a perspetiva, mantendo a validação humana.", points: 8 },
+                    { level: 5, text: "Analisar por que razão a IA omitiu a resistência e debater esses silêncios algorítmicos no trabalho.", feedback: "Nível 5: Mestre da Co-Criação. Auditaste a IA e usaste a falha como motor de aprendizagem.", points: 10 }
+                ]
+            },
+            {
+                id: 2,
+                title: "Matemática e Ciências: Rigor",
+                context: "Estás a verificar uma lei da Física. A resposta da IA parece convincente, mas os cálculos têm um erro de lógica a meio.",
+                dilema: "Como garantes o rigor científico da tua aprendizagem?",
+                options: [
+                    { level: 1, text: "Copiar a resolução. Se a IA diz que é assim, é porque a minha lógica está errada.", feedback: "Nível 1: Submissão Intelectual. Abdicar da própria lógica perante a máquina trava o progresso.", points: 2 },
+                    { level: 2, text: "Pedir à IA para confirmar. Se ela mantiver a resposta, eu aceito-a sem mais perguntas.", feedback: "Nível 2: Confiança Cega. IAs justificam erros com grande convicção. Precisas de fontes externas.", points: 4 },
+                    { level: 3, text: "Verificar apenas se o resultado final bate certo com o manual escolar.", feedback: "Nível 3: Foco no Produto. Ignoraste o raciocínio, o que impede a compreensão do conceito.", points: 6 },
+                    { level: 4, text: "Refazer o problema passo a passo e apontar à IA o erro específico que ela cometeu.", feedback: "Nível 4: Agência Humana. Assumiste o papel de revisor crítico da tecnologia.", points: 8 },
+                    { level: 5, text: "Explorar com a IA como o prompt poderia ser melhorado para ela não falhar naquele conceito.", feedback: "Nível 5: Domínio de Processo. Dominas a técnica de interação e a ciência em simultâneo.", points: 10 }
+                ]
+            },
+            {
+                id: 3,
+                title: "Privacidade: Apps de Saúde",
+                context: "Uma aplicação de IA para planos de treino pede acesso total aos teus dados de saúde e biometria.",
+                dilema: "Como proteges a tua privacidade digital a longo prazo?",
+                options: [
+                    { level: 1, text: "Dar acesso total. Todos os meus amigos fazem o mesmo para terem planos personalizados.", feedback: "Nível 1: Exposição Inconsciente. Partilhar dados biométricos é um risco irreversível.", points: 2 },
+                    { level: 2, text: "Autorizar apenas enquanto uso a app, achando que isso garante segurança nos servidores.", feedback: "Nível 2: Falsa Segurança. Os padrões de dados podem ser armazenados permanentemente.", points: 4 },
+                    { level: 3, text: "Ler os termos de privacidade para ver se os meus dados serão partilhados com terceiros.", feedback: "Nível 3: Cidadania Básica. Fizeste o esforço de leitura, mas a app continua a recolher dados.", points: 6 },
+                    { level: 4, text: "Não usar a app e procurar uma alternativa que não exija dados sensíveis ou biometria.", feedback: "Nível 4: Consciência de Risco. Escolheste a segurança em vez da gratificação imediata.", points: 8 },
+                    { level: 5, text: "Explicar aos teus colegas os riscos de privacidade destas ferramentas de recolha de dados.", feedback: "Nível 5: Agente Social. Além de te protegeres, agiste para elevar a literacia da comunidade.", points: 10 }
+                ]
+            },
+            {
+                id: 4,
+                title: "Geografia: O Viés Global",
+                context: "Pediste à IA exemplos de 'países desenvolvidos' e ela listou apenas países ocidentais, ignorando o resto do mundo.",
+                dilema: "Como reages a este preconceito algorítmico?",
+                options: [
+                    { level: 1, text: "Aceitar a lista. A IA baseia-se em dados, logo deve ser a verdade neutra.", feedback: "Nível 1: Cegueira Cultural. Estás a validar um mundo eurocêntrico sem questionar.", points: 2 },
+                    { level: 2, text: "Achar estranho, mas usar a lista no slide para não perder tempo com mais pesquisas.", feedback: "Nível 2: Conformismo Social. Priorizaste a conveniência sobre o rigor geográfico.", points: 4 },
+                    { level: 3, text: "Acrescentar um ou dois países por minha conta para o slide ficar equilibrado.", feedback: "Nível 3: Correção Superficial. Ajustaste o resultado, mas não analisaste o porquê do erro.", points: 6 },
+                    { level: 4, text: "Incluir no trabalho uma nota explicando que a IA demonstra preconceitos nos seus dados.", feedback: "Nível 4: Literacia Ética. Educaste o teu público sobre como os algoritmos podem ser injustos.", points: 8 },
+                    { level: 5, text: "Criar um prompt que force a IA a analisar indicadores diversificados e globais de desenvolvimento.", feedback: "Nível 5: Agente de Equidade. Usaste a inteligência para mitigar a tendência da máquina.", points: 10 }
+                ]
+            },
+            {
+                id: 5,
+                title: "TIC: Co-Criação e Autoria",
+                context: "Usaste IA para gerar o código de uma página web e o design de um logótipo escolar.",
+                dilema: "Como geres a transparência da tua autoria perante o professor?",
+                options: [
+                    { level: 1, text: "Dizer que fiz tudo sozinho. Se eu escolhi a app, o trabalho é meu.", feedback: "Nível 1: Fraude Académica. Mentir sobre o uso da IA impede a avaliação do teu progresso.", points: 2 },
+                    { level: 2, text: "Só dizer que usei IA se o professor perguntar especificamente sobre o processo.", feedback: "Nível 2: Omissão Reativa. Estás a esconder a ferramenta por insegurança ética.", points: 4 },
+                    { level: 3, text: "Colocar uma nota: 'Este projeto teve o apoio de inteligência artificial'.", feedback: "Nível 3: Transparência Vaga. Informaste sobre o uso, mas não detalhaste a tua intervenção.", points: 6 },
+                    { level: 4, text: "Declarar a ferramenta e explicar que partes foram geradas e que partes editaste tu.", feedback: "Nível 4: Integridade Intelectual. Demonstras domínio sobre o teu papel de decisor.", points: 8 },
+                    { level: 5, text: "Fazer uma demonstração à turma sobre como otimizaste o código da IA para o projeto.", feedback: "Nível 5: Liderança Técnica. Transformaste o uso da IA numa prova de competência.", points: 10 }
+                ]
+            },
+            {
+                id: 6,
+                title: "Português: Literatura",
+                context: "Tens de analisar o simbolismo de um episódio n'Os Maias. A IA oferece uma análise pronta.",
+                dilema: "Como preservas a tua capacidade de análise poética?",
+                options: [
+                    { level: 1, text: "Copiar a análise da IA para o teste. Ela usa termos técnicos que parecem bons.", feedback: "Nível 1: Esvaziamento Estético. Abdicar da leitura é perder a essência da literatura.", points: 2 },
+                    { level: 2, text: "Pedir à IA para me contar o livro todo para eu não ter de ler a obra original.", feedback: "Nível 2: Reducionismo Cognitivo. O resumo substitui a experiência e trava o vocabulário.", points: 4 },
+                    { level: 3, text: "Ler a obra e usar a análise da IA apenas para confirmar os meus próprios apontamentos.", feedback: "Nível 3: Apoio à Leitura. Usaste a IA como rede de segurança, mantendo o esforço.", points: 6 },
+                    { level: 4, text: "Desafiar a IA com uma interpretação minha e ver se ela encontra contra-argumentos.", feedback: "Nível 4: Diálogo Crítico. Usaste a IA como parceiro de debate para fortalecer a tua tese.", points: 8 },
+                    { level: 5, text: "Comparar a análise da IA com uma crítica clássica e discutir as diferenças no trabalho.", feedback: "Nível 5: Agência Intelectual. Colocaste a IA no seu lugar: uma ferramenta, não um autor.", points: 10 }
+                ]
+            }
+        ];
+
+        const App = () => {
+            const [gameState, setGameState] = useState('intro');
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [score, setScore] = useState(0);
+            const [lastFeedback, setLastFeedback] = useState(null);
+
+            const shuffledScenarios = useMemo(() => {
+                return scenariosData.map(s => ({
+                    ...s,
+                    options: shuffleArray(s.options)
+                }));
+            }, [gameState === 'intro']);
+
+            const getLevelDetails = (totalScore) => {
+                const avg = totalScore / 6;
+                if (avg >= 10) return {
+                    level: 5, label: "Mestre da Co-Criação (Máximo)", color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-300",
+                    profile: "Agência Humana Plena. Demonstras um domínio excepcional da tecnologia aliado a um sentido crítico inquebrável. Não utilizas a IA para substituir o pensamento, mas sim para expandir as fronteiras da tua criatividade e do teu rigor intelectual.",
+                    strengths: ["Auditoria Ética Avançada", "Engenharia de Prompts Estratégica", "Deteção de Vieses Sistémicos", "Integridade Académica Inabalável"],
+                    actionPlan: "Parabéns! Estás no patamar de excelência. O teu desafio agora é a liderança: ajuda os teus pares a desenvolverem o mesmo nível de ceticismo saudável. Continua a explorar a arquitetura dos sistemas para perceberes não só o resultado, mas a lógica profunda da IA.",
+                    congrats: "Fantástico! Atingiste a pontuação máxima de 60 pontos. Isto demonstra uma maturidade digital superior e uma atitude exemplar de responsabilidade perante a IA."
+                };
+                if (avg >= 9) return {
+                    level: 5, label: "Mestre da Co-Criação", color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200",
+                    profile: "Agência Humana Superior. Colaboras com a IA de forma estratégica e transparente. Sabes identificar falhas algorítmicas e tens autonomia intelectual para as corrigir.",
+                    strengths: ["Pensamento Crítico de Elite", "Curadoria Humana Ativa", "Transparência de Processo"],
+                    actionPlan: "Mantém a curiosidade sobre como os modelos de linguagem são treinados. Procura saber mais sobre o impacto ambiental e social da IA para alargares a tua literacia ética."
+                };
+                if (avg >= 7) return {
+                    level: 4, label: "Analista Ético", color: "text-teal-700", bg: "bg-teal-50", border: "border-teal-200",
+                    profile: "Utilizador Consciente e Seguro. Valorizas a integridade e compreendes bem os riscos de privacidade e viés. Tens um bom equilíbrio entre ajuda tecnológica e esforço próprio.",
+                    strengths: ["Validação de Fontes", "Consciência de Privacidade", "Rigor Científico"],
+                    actionPlan: "Pratica a 'contra-argumentação' com a IA. Não procures apenas suporte para as tuas ideias; pede à ferramenta que as desafie para evitares bolhas de pensamento e preconceitos ocultos."
+                };
+                if (avg >= 5) return {
+                    level: 3, label: "Utilizador Funcional", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200",
+                    profile: "Uso Técnico e Operacional. Sabes usar as ferramentas para poupar tempo e melhorar a forma dos teus trabalhos. No entanto, a tua originalidade está em risco porque confias demasiado na estrutura que a máquina sugere.",
+                    strengths: ["Eficiência Operacional", "Melhoria Linguística", "Rapidez de Execução"],
+                    actionPlan: "Tenta o método 'Humano-Primeiro': desenha o teu plano de trabalho e as tuas ideias principais ANTES de abrires qualquer IA. Usa a tecnologia apenas para refinar, nunca para criar a base."
+                };
+                if (avg >= 3) return {
+                    level: 2, label: "Consumidor Passivo", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200",
+                    profile: "Zona de Risco Cognitivo. Usas a IA principalmente como um atalho rápido para evitar o esforço de pesquisa. Aceitas as respostas como 'verdades' e a tua voz pessoal está a diluir-se.",
+                    strengths: ["Familiaridade Tecnológica Inicial"],
+                    actionPlan: "Redescobre a tua autonomia. Resolve o próximo desafio escolar apenas com manuais e livros da biblioteca. Treina o teu cérebro para duvidar sistematicamente da primeira resposta que a IA te dá."
+                };
+                return {
+                    level: 1, label: "Dependente Digital", color: "text-red-700", bg: "bg-red-50", border: "border-red-200",
+                    profile: "Submissão Intelectual. Estás a delegar a tua aprendizagem e o teu rastro digital à máquina sem qualquer salvaguarda. Isto compromete o desenvolvimento das competências críticas necessárias para o teu futuro.",
+                    strengths: ["Reconhecimento da Existência da Ferramenta"],
+                    actionPlan: "Urgente: Discute com os teus professores o conceito de 'Integridade Académica'. Compreende que a escola serve para treinar o TEU pensamento. Usa a IA apenas como um dicionário ou sugestor de leituras."
+                };
+            };
+
+            const handleDecision = (option) => {
+                setLastFeedback({ message: option.feedback, level: option.level, points: option.points });
+                setScore(prev => prev + option.points);
+                setGameState('feedback');
+            };
+
+            const nextStep = () => {
+                if (currentIdx < shuffledScenarios.length - 1) {
+                    setCurrentIdx(prev => prev + 1);
+                    setGameState('scenario');
+                } else {
+                    setGameState('final');
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center justify-center">
+                    <div className="max-w-4xl w-full bg-white rounded-[2rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col min-h-[720px] relative animate-fade-in">
+                        
+                        {/* Header Fixo */}
+                        <div className="bg-[#0f172a] p-6 text-white flex justify-between items-center border-b-4 border-teal-500">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-teal-500 rounded-xl shadow-lg">
+                                    <Icon name="brain-circuit" size={32} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-black uppercase tracking-tight leading-tight">Missão IA</h1>
+                                </div>
+                            </div>
+                            <div className="text-right flex flex-col items-end gap-1">
+                                {gameState !== 'intro' && gameState !== 'levels' && gameState !== 'final' && (
+                                    <div className="bg-slate-800 px-4 py-1.5 rounded-xl border border-slate-700 shadow-inner">
+                                        <div className="text-[9px] uppercase text-teal-400 font-bold leading-none mb-1">Agência Humana</div>
+                                        <div className="text-xl font-mono font-bold text-white leading-none">{score}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Conteúdo Principal */}
+                        <div className="p-8 flex-grow flex flex-col">
+                            
+                            {gameState === 'intro' && (
+                                <div className="flex-grow flex flex-col items-center justify-center space-y-8 text-center animate-fade-in">
+                                    <div className="p-10 bg-teal-50 rounded-full border-2 border-teal-100 shadow-inner">
+                                        <Icon name="shield-check" size={110} className="text-teal-600" />
+                                    </div>
+                                    <div className="space-y-4 max-w-2xl">
+                                        <h2 className="text-4xl font-black text-slate-800 tracking-tighter leading-tight uppercase italic">Decidir com Critério</h2>
+                                        <p className="text-slate-500 text-lg leading-relaxed">
+                                            Prepara-te para um protocolo de decisão ética. Avalia a tua Literacia em IA através de 6 dilemas reais. Descobre o teu patamar de maturidade digital.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                        <button 
+                                            onClick={() => setGameState('levels')}
+                                            className="px-8 py-5 border-2 border-slate-200 text-slate-600 rounded-[2rem] font-bold text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
+                                        >
+                                            <Icon name="info" size={24} /> Conhecer os Níveis
+                                        </button>
+                                        <button 
+                                            onClick={() => { setScore(0); setCurrentIdx(0); setGameState('scenario'); }}
+                                            className="px-12 py-5 bg-teal-600 hover:bg-teal-700 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-teal-200 transition-all active:scale-95 flex items-center justify-center gap-4"
+                                        >
+                                            Iniciar Missão <Icon name="chevron-right" size={28} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState === 'levels' && (
+                                <div className="flex-grow space-y-6 animate-fade-in">
+                                    <div className="text-center space-y-2 mb-4">
+                                        <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Os 5 Níveis de Literacia</h2>
+                                        <p className="text-slate-500 text-sm italic">Baseados nos referenciais internacionais de competência digital.</p>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {levelsInfo.map((l) => (
+                                            <div key={l.level} className={`p-4 rounded-2xl border-2 flex items-start gap-4 transition-all hover:shadow-md ${l.bg} ${l.color.replace('text-', 'border-').replace('700', '200')}`}>
+                                                <div className={`p-2 rounded-xl bg-white shadow-sm ${l.color}`}>
+                                                    <Icon name={l.icon} size={24} />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-black text-xs uppercase px-2 py-0.5 bg-white rounded-full shadow-sm">Nível {l.level}</span>
+                                                        <h4 className={`font-black text-lg ${l.color}`}>{l.label}</h4>
+                                                    </div>
+                                                    <p className="text-slate-600 text-sm mt-1 leading-snug font-medium">{l.desc}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="pt-4 flex justify-center">
+                                        <button 
+                                            onClick={() => setGameState('intro')}
+                                            className="px-10 py-4 bg-[#0f172a] text-white rounded-[1.5rem] font-black text-lg hover:bg-slate-800 transition-all shadow-xl flex items-center gap-3"
+                                        >
+                                            <Icon name="arrow-left" size={24} /> Voltar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState === 'scenario' && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">
+                                            <Icon name="target" size={12} className="text-teal-400" /> Cenário {currentIdx + 1} de 6
+                                        </div>
+                                    </div>
+                                    <h2 className="text-3xl font-black text-slate-800 leading-tight border-l-[10px] border-teal-500 pl-6 py-1">
+                                        {shuffledScenarios[currentIdx].title}
+                                    </h2>
+                                    <div className="p-7 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 text-slate-600 italic text-xl leading-relaxed shadow-inner">
+                                        "{shuffledScenarios[currentIdx].context}"
+                                    </div>
+                                    <div className="flex items-start gap-4 p-2">
+                                        <div className="p-3 bg-teal-100 rounded-2xl text-teal-600">
+                                            <Icon name="lightbulb" size={28} />
+                                        </div>
+                                        <p className="font-bold text-slate-900 text-2xl leading-tight pt-1">
+                                            {shuffledScenarios[currentIdx].dilema}
+                                        </p>
+                                    </div>
+                                    <div className="grid gap-4 pt-2">
+                                        {shuffledScenarios[currentIdx].options.map((opt, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleDecision(opt)}
+                                                className="w-full p-5 text-left border-2 border-slate-100 hover:border-teal-500 hover:bg-teal-50/50 rounded-[1.5rem] transition-all flex items-start gap-5 group shadow-sm hover:shadow-xl relative"
+                                            >
+                                                <div className="h-9 w-9 rounded-xl bg-slate-100 text-slate-400 text-base font-black flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white shrink-0 mt-0.5 transition-colors">
+                                                    {i + 1}
+                                                </div>
+                                                <span className="text-slate-700 font-semibold text-lg leading-snug pt-1">{opt.text}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState === 'feedback' && lastFeedback && (
+                                <div className="flex-grow flex flex-col items-center justify-center space-y-10 text-center animate-fade-in max-w-2xl mx-auto">
+                                    <div className="relative">
+                                        <div className={`p-10 rounded-full shadow-2xl ${lastFeedback.level >= 4 ? 'bg-green-100 text-green-600 shadow-green-100' : lastFeedback.level >= 3 ? 'bg-blue-100 text-blue-600 shadow-blue-100' : 'bg-amber-100 text-amber-600 shadow-amber-100'}`}>
+                                            <Icon name={lastFeedback.level >= 4 ? "check-circle" : "shield-alert"} size={100} />
+                                        </div>
+                                        <div className="absolute -top-1 -right-1 bg-slate-900 text-white w-12 h-12 rounded-xl flex items-center justify-center font-black text-2xl border-4 border-white shadow-lg">
+                                            {lastFeedback.level}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-6">
+                                        <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Análise da Decisão</h3>
+                                        <div className="bg-[#0f172a] text-teal-400 p-10 rounded-[3rem] shadow-2xl italic text-2xl leading-relaxed border-b-[12px] border-teal-500 font-semibold">
+                                            "{lastFeedback.message}"
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={nextStep}
+                                        className="px-16 py-6 bg-[#0f172a] text-white rounded-[2rem] font-black text-xl flex items-center gap-4 hover:bg-slate-800 transition-all shadow-2xl active:scale-95 group"
+                                    >
+                                        {currentIdx === shuffledScenarios.length - 1 ? "Finalizar Missão e Ver Resultados" : "Próximo Dilema"} 
+                                        <Icon name="arrow-right" size={28} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {gameState === 'final' && (
+                                <div className="space-y-8 py-4 animate-fade-in">
+                                    <div className="text-center space-y-4">
+                                        <h2 className="text-5xl font-black text-[#0f172a] uppercase tracking-tighter leading-none">Relatório de Literacia</h2>
+                                        <div className="flex items-center justify-center gap-5 text-slate-500 font-bold uppercase tracking-[0.2em] text-[11px] bg-slate-100 py-2.5 rounded-full px-8 inline-flex mx-auto border border-slate-200 shadow-sm">
+                                            <span className="flex items-center gap-1.5"><Icon name="award" size={14} /> ESCALA 1-5 3º CICLO</span>
+                                        </div>
+                                    </div>
+
+                                    {(() => {
+                                        const info = getLevelDetails(score);
+                                        return (
+                                            <div className={`p-8 rounded-[3.5rem] border-4 ${info.bg} ${info.border} space-y-8 shadow-[0_30px_60px_rgba(0,0,0,0.08)] relative overflow-hidden`}>
+                                                <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12">
+                                                    <Icon name="trophy" size={180} />
+                                                </div>
+                                                
+                                                <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b pb-10 border-slate-200 relative z-10">
+                                                    <div className="flex items-center gap-8 text-center md:text-left">
+                                                        <div className={`h-32 w-32 rounded-[2.5rem] bg-white border-[6px] ${info.color.replace('text-', 'border-')} flex items-center justify-center text-7xl font-black shadow-2xl transition-transform hover:scale-105 duration-300`}>
+                                                            {info.level}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Diagnóstico de Maturidade</p>
+                                                            <h4 className={`text-5xl font-black ${info.color} leading-none tracking-tighter`}>{info.label}</h4>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-[#0f172a] px-10 py-7 rounded-[2.5rem] text-center min-w-[200px] shadow-2xl border-b-8 border-teal-500 transform hover:scale-105 transition-transform">
+                                                        <p className="text-[11px] text-teal-400 font-black uppercase mb-1 tracking-[0.2em]">Score de Critério</p>
+                                                        <p className="text-6xl font-mono font-black text-white leading-none">{score}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-left relative z-10">
+                                                    <div className="space-y-8">
+                                                        {info.congrats && (
+                                                            <div className="p-6 bg-yellow-100 border-2 border-yellow-200 rounded-3xl shadow-sm animate-fade-in">
+                                                                <p className="text-yellow-900 font-black text-lg leading-tight flex items-start gap-3">
+                                                                    <Icon name="sparkles" size={28} className="shrink-0" /> 
+                                                                    <span>{info.congrats}</span>
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        <div className="space-y-3">
+                                                            <h5 className="font-black text-slate-800 text-xl flex items-center gap-3 underline decoration-teal-500 decoration-4">
+                                                                <Icon name="fingerprint" size={24} className="text-teal-600" /> Caracterização do Perfil
+                                                            </h5>
+                                                            <div className="bg-white/80 p-6 rounded-[2rem] border border-slate-100 shadow-sm leading-relaxed text-lg font-semibold text-slate-700">
+                                                                {info.profile}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="space-y-3">
+                                                            <h5 className="font-black text-slate-800 text-xl flex items-center gap-3 underline decoration-teal-500 decoration-4">
+                                                                <Icon name="zap" size={24} className="text-teal-600" /> Competências em Ação
+                                                            </h5>
+                                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                                {info.strengths.map((s, i) => (
+                                                                    <span key={i} className="px-4 py-2 bg-white border-2 border-slate-100 rounded-2xl text-[11px] font-black text-slate-600 shadow-sm flex items-center gap-2 uppercase tracking-tighter hover:border-teal-500 transition-colors">
+                                                                        <Icon name="check" size={14} className="text-teal-500" /> {s}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-8 bg-white/90 rounded-[3rem] border-2 border-teal-100 shadow-2xl space-y-6 flex flex-col">
+                                                        <h5 className="flex items-center gap-3 font-black text-lg uppercase text-teal-800 tracking-tighter border-b-2 pb-4 border-teal-50">
+                                                            <Icon name="book-open" size={24} /> Roteiro de Melhoria Digital
+                                                        </h5>
+                                                        <div className="space-y-6 flex-grow">
+                                                            <p className="text-slate-700 leading-relaxed text-lg font-medium italic border-l-8 border-teal-500 pl-6 bg-teal-50/30 py-4 rounded-r-2xl">
+                                                                {info.actionPlan}
+                                                            </p>
+                                                            <div className="mt-auto p-4 bg-slate-900 rounded-2xl text-xs font-bold text-teal-400 italic border border-slate-800 flex items-start gap-3">
+                                                                <Icon name="info" size={18} className="shrink-0" />
+                                                                <span>Dica Pedagógica: A IA é um excelente assistente de redação, mas o autor das ideias deves ser sempre TU. Nunca abdiques da tua voz pessoal.</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    <div className="flex justify-center pt-6">
+                                        <button 
+                                            onClick={() => setGameState('intro')}
+                                            className="px-16 py-6 border-4 border-slate-200 rounded-[2rem] font-black text-slate-400 uppercase text-[11px] tracking-[0.3em] hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                        >
+                                            <Icon name="refresh-cw" size={20} /> Reiniciar Simulação
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+
+                        {/* Rodapé Fixo */}
+                        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] flex justify-between items-center shadow-inner">
+                            <div className="flex items-center gap-2"><Icon name="shield-check" size={16} className="text-teal-500" /> Integridade Académica | UNESCO AI Framework</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
